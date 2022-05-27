@@ -1,29 +1,69 @@
 #ifndef FRACTALGENERATOR_H
 #define FRACTALGENERATOR_H
 
-#include <QGraphicsScene>
-#include <QImage>
-
 #include <complex>
 
-class FractalGenerator
-{
-public:
-    FractalGenerator(int width, int height);
+#include <QGraphicsScene>
+#include <QImage>
+#include <QObject>
 
-    void Generate(QImage &image, int limit);
-    void OneStep(QImage &image, int iteration);
+#include "constants.h"
 
-    void LoadPalette(QString fileName);
+struct Result {
+    Result() = default;
+    Result(std::complex<double> original, std::complex<double> current) : Original(original), Current(current) {}
+
+    std::complex<double> Original;
+    std::complex<double> Current;
+
+    bool AboveTwo = false;
+    size_t LastIteration;
+};
+
+
+struct ResultMatrix {
+    ResultMatrix() = default;
+    ResultMatrix(size_t width, size_t height);
+
+    QImage ToImage(QRgb* palette, size_t paletteSize);
+
+    void Clear();
+    void Next();
 
 private:
-    QRgb palette[256];
+    size_t mWidth;
+    size_t mHeight;
 
-    int width;
-    int height;
+    size_t mIteration;
+    std::vector<Result> mInnerMatrixArray;
 
-    std::vector<std::vector<std::complex<double>>> original;
-    std::vector<std::vector<std::complex<double>>> results;
+    double mXMin = glb::constants::X_MIN;
+    double mXMax = glb::constants::X_MAX;
+    double mYMin = glb::constants::Y_MIN;
+    double mYMax = glb::constants::Y_MAX;
+};
+
+
+class GeneratorWorker : public QObject
+{
+    Q_OBJECT
+
+public:
+    GeneratorWorker(size_t width, size_t height, size_t depth);
+    virtual ~GeneratorWorker() = default;
+
+    ResultMatrix Generate();
+
+private:
+    size_t mDepthLimit;
+    size_t mHeight;
+    size_t mWidth;
+
+public slots:
+    void generateAsync();
+
+signals:
+    void finished(ResultMatrix);
 };
 
 #endif // FRACTALGENERATOR_H

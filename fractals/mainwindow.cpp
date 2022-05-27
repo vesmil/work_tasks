@@ -1,53 +1,41 @@
+#include <QGraphicsPixmapItem>
+#include <QTextEdit>
+
 #include "mainwindow.h"
-#include "qthread.h"
+#include "constants.h"
 #include "ui_mainwindow.h"
 
-#include <QGraphicsPixmapItem>
-#include <QFileDialog>
-
 MainWindow::MainWindow(QWidget *parent)
-    : QMainWindow(parent), ui(new Ui::MainWindow)
+    : QMainWindow(parent), mUi(new Ui::MainWindow)
 {
-    ui->setupUi(this);
+    mUi->setupUi(this);
 
-    generator = new FractalGenerator(width, height);
+    SetupTextEdits();
 
-    scene = new QGraphicsScene(this);
-    ui->graphicsView->setScene(scene);
-    image = new QImage{width, height, QImage::Format_RGB32};
-    scene->addPixmap(QPixmap::fromImage(*image));
+    mScene = new QGraphicsScene(this);
+    mUi->graphicsView->setScene(mScene);
 
-    generate_button = new QPushButton("Generate", this);
-    generate_button->setGeometry(QRect(QPoint(350, 550), QSize(80, 30)));
-    connect(generate_button, &QPushButton::released, this, &MainWindow::handleGenerate);
+    mGenerator = new GeneratorLink(mScene, mUi->widthEdit, mUi->heightEdit, mUi->depthEdit);
 
-    generate_button = new QPushButton("Next step", this);
-    generate_button->setGeometry(QRect(QPoint(440, 550), QSize(80, 30)));
-    connect(generate_button, &QPushButton::released, this, &MainWindow::handleAnimate);
+    connect(mUi->generateButton, &QPushButton::clicked, mGenerator, &GeneratorLink::handleGenerate);
+    connect(mUi->paletteButton, &QPushButton::clicked, mGenerator, &GeneratorLink::handlePalette);
+    connect(mUi->saveButton, &QPushButton::clicked, mGenerator, &GeneratorLink::saveImage);
+}
 
-    generate_button = new QPushButton("Select palette", this);
-    generate_button->setGeometry(QRect(QPoint(570, 550), QSize(80, 30)));
-    connect(generate_button, &QPushButton::released, this, &MainWindow::handlePalette);
+void MainWindow::SetupTextEdits()
+{
+    mUi->widthEdit->setText(QString::number(glb::constants::DEFAULT_WIDTH));
+    mUi->heightEdit->setText(QString::number(glb::constants::DEFAULT_HEIGHT));
+    mUi->depthEdit->setText(QString::number(glb::constants::DEFAULT_ALGO_DEPTH));
+}
+
+void MainWindow::resizeEvent(QResizeEvent *event)
+{
+    QWidget::resizeEvent(event);
+    mGenerator->Resize(mUi->graphicsView->viewport()->width(), mUi->graphicsView->viewport()->height());
 }
 
 MainWindow::~MainWindow()
 {
-    delete ui;
-}
-
-void MainWindow::handleGenerate()
-{
-    generator->Generate(*image, 50);
-    scene->addPixmap(QPixmap::fromImage(*image));
-}
-
-void MainWindow::handleAnimate()
-{
-    generator->OneStep(*image, step++);
-    scene->addPixmap(QPixmap::fromImage(*image));
-}
-
-void MainWindow::handlePalette(){
-    QString filename= QFileDialog::getOpenFileName(this, "Choose Palette");
-    generator->LoadPalette(filename);
+    delete mUi;
 }

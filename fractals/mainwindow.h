@@ -1,11 +1,11 @@
 #ifndef MAINWINDOW_H
 #define MAINWINDOW_H
 
-#include "fractalgenerator.h"
-
 #include <QGraphicsScene>
 #include <QMainWindow>
-#include <qpushbutton.h>
+
+#include "fractalgenerator.h"
+#include "generatorlink.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
@@ -20,24 +20,15 @@ public:
     ~MainWindow();
 
 private:
-    Ui::MainWindow *ui;
+    void SetupTextEdits();
 
-    QGraphicsScene *scene;
-    QImage *image;
+    Ui::MainWindow *mUi;
+    QGraphicsScene *mScene;
+    QImage *mImage;
+    GeneratorLink *mGenerator;
 
-    QPushButton *generate_button;
-    FractalGenerator *generator;
-
-    int width = 750;
-    int height = 500;
-
-    int step = 0;
-
-private slots:
-    void handleGenerate();
-    void handleAnimate();
-    void handlePalette();
-
+protected:
+    void resizeEvent(QResizeEvent *event) override;
 };
 
 #endif // MAINWINDOW_H

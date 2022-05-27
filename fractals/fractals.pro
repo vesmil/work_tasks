@@ -10,11 +10,14 @@ CONFIG += c++17
 
 SOURCES += \
     fractalgenerator.cpp \
+    generatorlink.cpp \
     main.cpp \
     mainwindow.cpp
 
 HEADERS += \
+    constants.h \
     fractalgenerator.h \
+    generatorlink.h \
     mainwindow.h
 
 FORMS += \

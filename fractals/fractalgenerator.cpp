@@ -1,74 +1,90 @@
-#include "fractalgenerator.h"
-
 #include <QFile>
 
-FractalGenerator::FractalGenerator(int width, int height) : width(width), height(height)
-{   
-    palette[0] = qRgb(255,255,255);
+#include "fractalgenerator.h"
+#include "constants.h"
 
-    for (int i = 1; i < 256; ++i){
-        palette[i] = qRgb(0,0,0);
+GeneratorWorker::GeneratorWorker(size_t width, size_t height, size_t depth)
+{
+    mWidth = width;
+    mHeight = height;
+    mDepthLimit = depth;
+}
+
+void GeneratorWorker::generateAsync()
+{
+    ResultMatrix resultMatrix{mWidth, mHeight};
+
+    for (size_t iteration = 0; iteration < mDepthLimit; ++iteration)
+    {
+        resultMatrix.Next();
     }
 
-    for (int i = 0; i < width; ++i){
-        std::vector<std::complex<double>> temp_vector;
-        std::vector<std::complex<double>> zero_vector;
+    emit finished(resultMatrix);
+}
 
-        for (int j = 0; j < height; ++j){
-            double real = (i - 2 * width / 3.0f) / (width / 3.0f);
-            double im = (j - height / 2.0f) / (height / 2.0f);
-            temp_vector.emplace_back(real, im);
+ResultMatrix::ResultMatrix(size_t width, size_t height) : mWidth(width), mHeight(height)
+{
+    mInnerMatrixArray.resize(width * height);
+    Clear();
+}
 
-            zero_vector.emplace_back(0,0);
+void ResultMatrix::Clear()
+{
+    mIteration = 0;
+
+    double x_step = (mXMax - mXMin) / mWidth;
+    double y_step = (mYMax - mYMin) / mHeight;
+
+    for (size_t i = 0; i < mWidth; ++i)
+    {
+        for (size_t j = 0; j < mHeight; ++j)
+        {
+            double real = mXMin + i * x_step;
+            double im = mYMin + j * y_step;
+
+            mInnerMatrixArray[i + j * mWidth] = Result{{real, im},{0,0}};
         }
-
-        results.emplace_back(zero_vector);
-        original.emplace_back(temp_vector);
     }
 }
 
-void FractalGenerator::LoadPalette(QString fileName)
+void ResultMatrix::Next()
 {
-    QFile file(fileName);
+    for (size_t i = 0; i < mWidth; ++i)
+    {
+        for (size_t j = 0; j < mHeight; ++j)
+        {
+            if (!mInnerMatrixArray[i + j * mWidth].AboveTwo)
+            {
+                Result& result = mInnerMatrixArray[i + j * mWidth];
+                result.Current = result.Current * result.Current + result.Original;
 
-    if (!file.open(QIODevice::ReadOnly))
-        return;
-
-    int i = 0;
-    while (!file.atEnd()) {
-        QByteArray line = file.readLine();
-        QList<QByteArray> split = line.split(';');
-
-        palette[i++] = qRgb(split[0].toInt(), split[1].toInt(), split[2].toInt());
-    }
-}
-
-void FractalGenerator::Generate(QImage &image, int limit)
-{
-    image.fill(palette[0]);
-
-    for (int iteration = 0; iteration < limit; ++iteration){
-        OneStep(image, iteration);
-    }
-}
-
-void FractalGenerator::OneStep(QImage &image, int iteration)
-{
-    if (iteration == 0) {
-        image.fill(palette[0]);
-    }
-
-    for (int i = 0; i < width; ++i){
-        for (int j = 0; j < height; ++j){
-
-            results[i][j] = results[i][j] * results[i][j] + original[i][j];
-
-            if (std::abs(results[i][j]) > 2) {
-                image.setPixel(i, j, palette[255 - iteration]);
-
-                results[i][j] = 0;
-                original[i][j] = 0;
+                if (std::abs(result.Current) > 2)
+                {
+                    result.AboveTwo = true;
+                    result.LastIteration = mIteration;
+                }
             }
         }
     }
+
+    mIteration++;
+}
+
+QImage ResultMatrix::ToImage(QRgb* palette, size_t paletteSize)
+{
+    QImage image(mWidth, mHeight, QImage::Format_RGB32);
+    size_t maxIndex = paletteSize - 1;
+
+    for (size_t i = 0; i < mWidth; ++i)
+    {
+        for (size_t j = 0; j < mHeight; ++j)
+        {
+            Result& result = mInnerMatrixArray[i + j * mWidth];
+
+            if (result.AboveTwo) image.setPixel(i, j, palette[maxIndex - result.LastIteration * maxIndex / mIteration]);
+            else image.setPixel(i, j, palette[0]);
+        }
+    }
+
+    return image;
 }
