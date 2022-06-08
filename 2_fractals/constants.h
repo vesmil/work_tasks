@@ -23,6 +23,8 @@ namespace glb
         static const double Y_MAX = 1.0;
 
         static const double DEFAULT_RATIO = (X_MAX - X_MIN) / (Y_MAX - Y_MIN);
+
+        static const bool USE_SYMMETRICITY = true;
     }
 }
 

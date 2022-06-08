@@ -99,8 +99,6 @@ void GeneratorLink::ResizeFromEvent(int width, int height)
     if (width < glb::constants::MIN_WIDTH || height < glb::constants::MIN_HEIGHT) return;
 
     double ratio = glb::constants::DEFAULT_RATIO;
-
-    // Fixed ratio
     if (width < height * ratio)
     {
         mWidth = width;
@@ -113,8 +111,7 @@ void GeneratorLink::ResizeFromEvent(int width, int height)
     }
 
     mWidthText->setText(QString::number(mWidth));
-    mHeightText->setText(QString::number(mHeight));
-    mCurrentImage = QImage{mWidth, mHeight, QImage::Format_RGB32};
+    mHeightText->setText(QString::number(mHeight));    
 }
 
 void GeneratorLink::handlePalette(QString filename){

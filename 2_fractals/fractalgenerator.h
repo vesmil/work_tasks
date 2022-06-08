@@ -29,13 +29,18 @@ struct ResultMatrix {
     QImage ToImage(QRgb* palette, size_t paletteSize);
 
     void Clear();
-    void Next();
+    void Next(size_t i);
+    void SetThreads(int count);
 
 private:
+    size_t mNumThreads;
+    size_t mRowsPerThread;
+
+    std::vector<size_t> mIterations;
+
     size_t mWidth;
     size_t mHeight;
 
-    size_t mIteration;
     std::vector<Result> mInnerMatrixArray;
 
     double mXMin = glb::constants::X_MIN;
@@ -57,6 +62,9 @@ public:
     ResultMatrix Generate();
 
 private:
+    static const int mNumThreads = 8;
+    QThread* mThreads[mNumThreads];
+
     size_t mDepthLimit;
     size_t mHeight;
     size_t mWidth;
