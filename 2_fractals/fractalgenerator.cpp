@@ -12,6 +12,7 @@ GeneratorWorker::GeneratorWorker(size_t width, size_t height, size_t depth)
 
 void GeneratorWorker::generateAsync()
 {
+    // TODO parallel computation
     ResultMatrix resultMatrix{mWidth, mHeight};
 
     for (size_t iteration = 0; iteration < mDepthLimit; ++iteration)

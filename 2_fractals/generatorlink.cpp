@@ -8,19 +8,21 @@
 GeneratorLink::GeneratorLink(QGraphicsScene *scene, QTextEdit *widthText, QTextEdit *heightText, QTextEdit *depthText)
     : mCurrentResult(), mConnectedScreen(scene), mWidthText(widthText), mHeightText(heightText), mDepthText(depthText)
 {
+    // UI init
     LoadTextValues();
 
     mCurrentImage = QImage{mWidth, mHeight, QImage::Format_RGB32};
     scene->addPixmap(QPixmap::fromImage(mCurrentImage));
 
-    for (int i = 0; i < 256; ++i) mPalette[i] = qRgb(i,i,i);
+    LoadDefaultPalette();
+
+    qRegisterMetaType<ResultMatrix>();
 }
 
 void GeneratorLink::LoadTextValues()
 {
     int tempHeight = mHeight;
     int tempWidth = mWidth;
-
     bool ok;
 
     mHeight = mHeightText->toPlainText().toInt(&ok);
@@ -76,38 +78,30 @@ void GeneratorLink::imageGenerated(ResultMatrix result)
     mConnectedScreen->addPixmap(QPixmap::fromImage(image));
 }
 
-bool GeneratorLink::LoadPalette(QString fileName)
+bool GeneratorLink::LoadPalette(QFile&& file)
 {
-    try
+    if (!file.open(QIODevice::ReadOnly)) return false;
+
+    int i = 0;
+    while (!file.atEnd())
     {
-        QFile file(fileName);
+        QByteArray line = file.readLine();
+        QList<QByteArray> split = line.split(';');
 
-        if (!file.open(QIODevice::ReadOnly)) return false;
-
-        int i = 0;
-        while (!file.atEnd())
-        {
-            QByteArray line = file.readLine();
-            QList<QByteArray> split = line.split(';');
-
-            mPalette[i++] = qRgb(split[0].toInt(), split[1].toInt(), split[2].toInt());
-        }
-    }
-    catch (...)
-    {
-        return false;
+        mPalette[i++] = qRgb(split[0].toInt(), split[1].toInt(), split[2].toInt());
     }
 
-    return true;
+    return i == 256;
 }
 
-void GeneratorLink::Resize(int width, int height)
+void GeneratorLink::ResizeFromEvent(int width, int height)
 {
-    if (width < 75 || height < 50) return;
+    if (width < glb::constants::MIN_WIDTH || height < glb::constants::MIN_HEIGHT) return;
 
-    double ratio = (glb::constants::X_MAX - glb::constants::X_MIN) / (glb::constants::Y_MAX - glb::constants::Y_MIN);
+    double ratio = glb::constants::DEFAULT_RATIO;
 
-    if (width / ratio < height * ratio)
+    // Fixed ratio
+    if (width < height * ratio)
     {
         mWidth = width;
         mHeight = width / ratio;
@@ -120,16 +114,19 @@ void GeneratorLink::Resize(int width, int height)
 
     mWidthText->setText(QString::number(mWidth));
     mHeightText->setText(QString::number(mHeight));
+    mCurrentImage = QImage{mWidth, mHeight, QImage::Format_RGB32};
 }
 
-void GeneratorLink::handlePalette(){
-    QString filename = QFileDialog::getOpenFileName(nullptr, "Choose Palette");
-    if (filename != "")
-    {
-        if (!LoadPalette(filename)) return; // TODO Errror message woudl be nice
-        mCurrentImage = mCurrentResult.ToImage(mPalette, sizeof(mPalette)/sizeof(*mPalette));
-        mConnectedScreen->addPixmap(QPixmap::fromImage(mCurrentImage));
-    }
+void GeneratorLink::handlePalette(QString filename){
+    if (filename == "Default") LoadDefaultPalette();
+    else if (!LoadPalette(glb::constants::DEFAULT_PALETTE_DIR.filePath(filename))) return;
+
+    mCurrentImage = mCurrentResult.ToImage(mPalette, sizeof(mPalette)/sizeof(*mPalette));
+    mConnectedScreen->addPixmap(QPixmap::fromImage(mCurrentImage));
+}
+
+void GeneratorLink::LoadDefaultPalette() {
+    for (int i = 0; i < 256; ++i) mPalette[i] = qRgb(i,i,i);
 }
 
 void GeneratorLink::saveImage()

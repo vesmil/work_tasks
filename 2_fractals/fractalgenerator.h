@@ -6,6 +6,7 @@
 #include <QGraphicsScene>
 #include <QImage>
 #include <QObject>
+#include <QMetaType>
 
 #include "constants.h"
 
@@ -43,6 +44,7 @@ private:
     double mYMax = glb::constants::Y_MAX;
 };
 
+Q_DECLARE_METATYPE(ResultMatrix);
 
 class GeneratorWorker : public QObject
 {

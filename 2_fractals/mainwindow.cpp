@@ -1,5 +1,6 @@
 #include <QGraphicsPixmapItem>
 #include <QTextEdit>
+#include <QDir>
 
 #include "mainwindow.h"
 #include "constants.h"
@@ -18,8 +19,16 @@ MainWindow::MainWindow(QWidget *parent)
     mGenerator = new GeneratorLink(mScene, mUi->widthEdit, mUi->heightEdit, mUi->depthEdit);
 
     connect(mUi->generateButton, &QPushButton::clicked, mGenerator, &GeneratorLink::handleGenerate);
-    connect(mUi->paletteButton, &QPushButton::clicked, mGenerator, &GeneratorLink::handlePalette);
     connect(mUi->saveButton, &QPushButton::clicked, mGenerator, &GeneratorLink::saveImage);
+
+    mUi->comboBox->addItem("Default");
+
+    QStringList palettes = glb::constants::DEFAULT_PALETTE_DIR.entryList(QStringList(), QDir::Files);
+    foreach(QString filename, palettes) {
+        mUi->comboBox->addItem(filename);
+    }
+
+    connect(mUi->comboBox, &QComboBox::currentTextChanged, mGenerator, &GeneratorLink::handlePalette);
 }
 
 void MainWindow::SetupTextEdits()
@@ -32,7 +41,7 @@ void MainWindow::SetupTextEdits()
 void MainWindow::resizeEvent(QResizeEvent *event)
 {
     QWidget::resizeEvent(event);
-    mGenerator->Resize(mUi->graphicsView->viewport()->width(), mUi->graphicsView->viewport()->height());
+    mGenerator->ResizeFromEvent(mUi->graphicsView->viewport()->width(), mUi->graphicsView->viewport()->height());
 }
 
 MainWindow::~MainWindow()

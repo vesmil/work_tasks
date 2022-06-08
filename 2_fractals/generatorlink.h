@@ -17,20 +17,21 @@ public:
     GeneratorLink(QGraphicsScene *scene, QTextEdit *widthText, QTextEdit *heightText, QTextEdit *depthText);
     virtual ~GeneratorLink() = default;
 
-    void Resize(int width, int height);
+    void ResizeFromEvent(int width, int height);
 
     int step = 0;
 
 public slots:
     void handleGenerate();
-    void handlePalette();
+    void handlePalette(QString fileName);
     void saveImage();
 
     void imageGenerated(ResultMatrix result);
 
 private:
     void LoadTextValues();
-    bool LoadPalette(QString fileName);
+    bool LoadPalette(QFile&& file);
+    void LoadDefaultPalette();
 
     ResultMatrix mCurrentResult;
     QImage mCurrentImage;
